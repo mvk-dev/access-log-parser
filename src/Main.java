@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
@@ -34,9 +35,15 @@ public class Main {
             return;
         }
 
-        System.out.println("Всего строк в файле: " + logFile.getRowsCount());
-        System.out.println("Длина самой длинной строки = " + logFile.getMaxRowLength());
-        System.out.println("Длина самой короткой строки = " + logFile.getMinRowLength());
+        System.out.println("Всего запросов = " + logFile.getRowsCount());
+
+        System.out.println("Доля запросов от поисковых ботов:");
+        for(Map.Entry<String, Integer> pair: logFile.getWebCrawlers1().entrySet()) {
+            System.out.println(pair.getKey() + ". Всего запросов = " + pair.getValue() + ". Доля = " + ((double)pair.getValue() / logFile.getRowsCount())*100 + "%");
+        }
+        System.out.println("Альтернативный подсчёт:");
+        for(Map.Entry<String, Integer> pair: logFile.getWebCrawlers2().entrySet()) {
+            System.out.println(pair.getKey() + ". Всего запросов = " + pair.getValue() + ". Доля = " + ((double)pair.getValue() / logFile.getRowsCount())*100 + "%");
+        }
     }
 }
-
