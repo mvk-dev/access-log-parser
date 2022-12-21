@@ -1,31 +1,42 @@
 import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+        File file;
         String path;
-        int filesCount = 0;
-        boolean isDirectory;
-        boolean isFileExists;
 
         while(true) {
             System.out.println("Укажите путь к файлу:");
             path = scanner.nextLine();
+            if (path.toLowerCase().equals("exit"))
+                return;
 
-            File file = new File(path);
-            isFileExists = file.exists();
-            isDirectory = file.isDirectory();
+            file = new File(path);
 
-            if (!isFileExists || isDirectory) {
-                System.out.println("Путь к файлу указан неверно: " + (isFileExists ? " каталог вместо файла" : " файл не существует"));
-                continue;   // избыточно
+            if (!file.exists() || file.isDirectory()) {
+                System.out.println("Путь к файлу указан неверно: " + (file.exists() ? " каталог вместо файла" : " файл не существует"));
             }
             else {
-                filesCount++;
-                System.out.println("Путь указан верно. Это файл номер " + filesCount);
+                break;
             }
         }
 
+        LogFile logFile = new LogFile(file, new MaxLengthCheck(1024));
+
+        try {
+            logFile.read();
+        }
+        catch (IOException ex) {
+            System.out.println(ex);
+            return;
+        }
+
+        System.out.println("Всего строк в файле: " + logFile.getRowsCount());
+        System.out.println("Длина самой длинной строки = " + logFile.getMaxRowLength());
+        System.out.println("Длина самой короткой строки = " + logFile.getMinRowLength());
     }
 }
+
