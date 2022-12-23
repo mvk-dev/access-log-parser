@@ -1,5 +1,7 @@
+package ru.accesslogparser;
+
 public class MaxLengthCheck implements Checkable {
-    private int maxLength;
+    private final int maxLength;
 
     public MaxLengthCheck(int maxLength) {
         this.maxLength = maxLength;

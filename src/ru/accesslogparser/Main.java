@@ -1,6 +1,7 @@
+package ru.accesslogparser;
+
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
@@ -12,7 +13,7 @@ public class Main {
         while(true) {
             System.out.println("Укажите путь к файлу:");
             path = scanner.nextLine();
-            if (path.toLowerCase().equals("exit"))
+            if (path.equalsIgnoreCase("exit"))
                 return;
 
             file = new File(path);
@@ -35,15 +36,19 @@ public class Main {
             return;
         }
 
-        System.out.println("Всего запросов = " + logFile.getRowsCount());
+        //long startTime = System.currentTimeMillis();
+        System.out.println("Всего разобранных записей из лог-файла " + logFile.getEntries().size());
 
-        System.out.println("Доля запросов от поисковых ботов:");
-        for(Map.Entry<String, Integer> pair: logFile.getWebCrawlers1().entrySet()) {
-            System.out.println(pair.getKey() + ". Всего запросов = " + pair.getValue() + ". Доля = " + ((double)pair.getValue() / logFile.getRowsCount())*100 + "%");
+        // Подсчёт статистики
+        Statistics stat = new Statistics();
+        for(LogEntry entry: logFile.getEntries()) {
+            stat.addEntry(entry);
         }
-        System.out.println("Альтернативный подсчёт:");
-        for(Map.Entry<String, Integer> pair: logFile.getWebCrawlers2().entrySet()) {
-            System.out.println(pair.getKey() + ". Всего запросов = " + pair.getValue() + ". Доля = " + ((double)pair.getValue() / logFile.getRowsCount())*100 + "%");
-        }
+
+        System.out.println(stat);
+        System.out.println("Доля траффика в минуту = " + String.format("%,.3f", stat.getTrafficRate(Statistics.TimeIntervals.MINUTE)));
+        System.out.println("Доля траффика в час = " + String.format("%,.3f", stat.getTrafficRate()));
+        System.out.println("Доля траффика в день = " + String.format("%,.3f", stat.getTrafficRate(Statistics.TimeIntervals.DAY)));
+        //System.out.println(System.currentTimeMillis() - startTime);
     }
 }
