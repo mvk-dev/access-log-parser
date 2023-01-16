@@ -2,6 +2,7 @@ package ru.accesslogparser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
@@ -49,6 +50,14 @@ public class Main {
         System.out.println("Доля траффика в минуту = " + String.format("%,.3f", stat.getTrafficRate(Statistics.TimeIntervals.MINUTE)));
         System.out.println("Доля траффика в час = " + String.format("%,.3f", stat.getTrafficRate()));
         System.out.println("Доля траффика в день = " + String.format("%,.3f", stat.getTrafficRate(Statistics.TimeIntervals.DAY)));
-        //System.out.println(System.currentTimeMillis() - startTime);
+
+        System.out.println("==================================================================");
+        System.out.println("Существующие страницы:");
+        System.out.println(stat.getExistingPages());
+
+        System.out.println("==================================================================");
+        System.out.println("Статистика используемых ОС:");
+        for (Map.Entry<String, Double> entry: stat.getOsRate().entrySet())
+            System.out.println(entry.getKey() + " = " + String.format("%.2f", entry.getValue()));
     }
 }

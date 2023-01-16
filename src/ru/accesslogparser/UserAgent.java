@@ -58,6 +58,10 @@ public class UserAgent {
         this.os = (tmpOs == null) ? "UNKNOWN" : tmpOs;
     }
 
+    public String getOs() {
+        return os;
+    }
+
     @Override
     public String toString() {
         return "{" +
