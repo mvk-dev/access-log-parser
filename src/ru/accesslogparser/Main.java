@@ -56,8 +56,17 @@ public class Main {
         System.out.println(stat.getExistingPages());
 
         System.out.println("==================================================================");
+        System.out.println("Несуществующие страницы:");
+        System.out.println(stat.getNonExistingPages());
+
+        System.out.println("==================================================================");
         System.out.println("Статистика используемых ОС:");
         for (Map.Entry<String, Double> entry: stat.getOsRate().entrySet())
             System.out.println(entry.getKey() + " = " + String.format("%.2f", entry.getValue()));
+
+        System.out.println("==================================================================");
+        System.out.println("Статистика используемых браузеров:");
+        for (Map.Entry<String, Double> entry: stat.getBrowserRate().entrySet())
+            System.out.println(entry.getKey() + " = " + String.format("%.6f", entry.getValue()));
     }
 }

@@ -62,6 +62,10 @@ public class UserAgent {
         return os;
     }
 
+    public String getBrowser() {
+        return browser;
+    }
+
     @Override
     public String toString() {
         return "{" +

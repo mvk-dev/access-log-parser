@@ -12,8 +12,10 @@ public class Statistics {
     private LocalDateTime maxTime;
 
     private final HashSet<String> existingPages;
+    private final HashSet<String> nonExistingPages;
 
     private final HashMap<String, Integer> osMap;
+    private final HashMap<String, Integer> browserMap;
 
 
     public enum TimeIntervals {
@@ -44,15 +46,21 @@ public class Statistics {
     }
 
     public Statistics() {
-      clean();
       existingPages = new HashSet<>();
+      nonExistingPages = new HashSet<>();
       osMap = new HashMap<>();
+      browserMap = new HashMap<>();
+      clean();
     }
 
     public void clean() {
         totalTraffic = 0;
         minTime = LocalDateTime.MAX;
         maxTime = LocalDateTime.MIN;
+        existingPages.clear();
+        nonExistingPages.clear();
+        osMap.clear();
+        browserMap.clear();
     }
 
     public void addEntry(LogEntry entry) {
@@ -63,13 +71,22 @@ public class Statistics {
         if (maxTime.isBefore(entry.getTime()))
             maxTime = entry.getTime();
 
-        if (entry.getResponseCode() == 200 && entry.getReferer().length() > 1)
-            existingPages.add(entry.getReferer());
+        if (entry.getReferer().length() > 1) {
+            switch (entry.getResponseCode()) {
+                case 200 -> existingPages.add(entry.getReferer());
+                case 404 -> nonExistingPages.add(entry.getReferer());
+            }
+        }
 
         // Заполняем частоту использования ОС
         String os = entry.getUserAgent().getOs();
         Integer value = osMap.get(os);
         osMap.put(os, value == null ? 1 : value+1);
+
+        // Заполняем частоту использования браузеров
+        String browser = entry.getUserAgent().getBrowser();
+        value = browserMap.get(browser);
+        browserMap.put(browser, value == null ? 1 : value+1);
     }
 
     /**
@@ -83,22 +100,34 @@ public class Statistics {
         return interval.getTrafficRate(this);
     }
 
-    public HashMap<String, Double> getOsRate() {
-        int totalOsRecsCount = 0;
+    private HashMap<String, Double> getMapRates(HashMap<String, Integer> srcMap) {
+        int totalRecsCount = 0;
 
-        for(Integer value : osMap.values())
-            totalOsRecsCount += value;
+        for(Integer value : srcMap.values())
+            totalRecsCount += value;
 
         HashMap<String, Double> result = new HashMap<>();
 
-        for (Map.Entry<String, Integer> entry: osMap.entrySet())
-            result.put(entry.getKey(), (double)entry.getValue() / totalOsRecsCount);
+        for (Map.Entry<String, Integer> entry: srcMap.entrySet())
+            result.put(entry.getKey(), (double)entry.getValue() / totalRecsCount);
 
         return result;
     }
 
+    public HashMap<String, Double> getOsRate() {
+        return getMapRates(osMap);
+    }
+
+    public HashMap<String, Double> getBrowserRate() {
+        return getMapRates(browserMap);
+    }
+
     public HashSet<String> getExistingPages() {
         return existingPages;
+    }
+
+    public HashSet<String> getNonExistingPages() {
+        return nonExistingPages;
     }
 
     @Override
