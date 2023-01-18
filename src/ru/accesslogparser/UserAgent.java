@@ -1,9 +1,22 @@
 package ru.accesslogparser;
 
 public class UserAgent {
-    final String os;
-    final String browser;
+    /**
+     * Наименование операционной системы
+     */
+    private final String os;
+    /**
+     * Наименование браузера
+     */
+    private final String browser;
+    /**
+     * Признак поискового бота
+     */
+    private final boolean isBot;
 
+    /**
+     * Типы операционных систем и regex для их поиска в теле UserAgent
+     */
     private enum OS {
           WINDOWS(".*\\bWINDOWS\\b.*")
         , ANDROID(".*\\bANDROID\\b.*")
@@ -17,6 +30,10 @@ public class UserAgent {
             this.token = str;
         }
     }
+
+    /**
+     * Типы браузеров и regex для их поиска в теле UserAgent
+     */
     private enum Browsers {
           CHROME(".*\\bCHROME/.*")
         , FIREFOX(".*\\bFIREFOX/.*")
@@ -33,6 +50,10 @@ public class UserAgent {
         }
     }
 
+    /**
+     * Разбирает строку UserAgent лога
+     * @param agent - строка с UserAgent
+     */
     public UserAgent(String agent) {
         agent = agent.toUpperCase();
         String tmpBrowser = null;
@@ -56,6 +77,9 @@ public class UserAgent {
             }
         }
         this.os = (tmpOs == null) ? "UNKNOWN" : tmpOs;
+
+        // Определение бота
+        this.isBot = agent.matches(".*BOT\\b.*");
     }
 
     public String getOs() {
@@ -64,6 +88,10 @@ public class UserAgent {
 
     public String getBrowser() {
         return browser;
+    }
+
+    public boolean isBot() {
+        return isBot;
     }
 
     @Override

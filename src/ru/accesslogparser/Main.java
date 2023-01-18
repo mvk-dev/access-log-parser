@@ -38,7 +38,7 @@ public class Main {
         }
 
         //long startTime = System.currentTimeMillis();
-        System.out.println("Всего разобранных записей из лог-файла " + logFile.getEntries().size());
+        System.out.println("Всего разобранных записей из лог-файла: " + logFile.getEntries().size());
 
         // Подсчёт статистики
         Statistics stat = new Statistics();
@@ -68,5 +68,14 @@ public class Main {
         System.out.println("Статистика используемых браузеров:");
         for (Map.Entry<String, Double> entry: stat.getBrowserRate().entrySet())
             System.out.println(entry.getKey() + " = " + String.format("%.6f", entry.getValue()));
+
+        System.out.println("==================================================================");
+        System.out.println("Среднее количество запросов от пользователей в час = " + String.format("%,.2f", stat.getUserRequestsRate()));
+
+        System.out.println("==================================================================");
+        System.out.println("Среднее количество ошибочных запросов в час = " + String.format("%,.2f", stat.getErrorRequestsRate()));
+
+        System.out.println("==================================================================");
+        System.out.println("Среднее количество запросов от одного пользователя = " + String.format("%,.2f", stat.getUserAttendanceRate()));
     }
 }

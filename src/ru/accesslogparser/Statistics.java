@@ -2,68 +2,117 @@ package ru.accesslogparser;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
+/**
+ * Класс подсчёта статистики по разобранному лог-файлу
+ */
 public class Statistics {
-    private long totalTraffic;
-    private LocalDateTime minTime;
-    private LocalDateTime maxTime;
+    private final List<LogEntry> logEntries;
 
+    /**
+     * Общий трафик
+     */
+    private long totalTraffic;
+    /**
+     * Минимальное время в логе
+     */
+    private LocalDateTime minTime;
+    /**
+     * Максимальное время в логе
+     */
+    private LocalDateTime maxTime;
+    /**
+     * Общее число пользовательских запросов (не от ботов)
+     */
+    private int totalUsersRequests;
+
+    /**
+     * Общее число ошибочных запросов (responseCode = 4хх, 5хх )
+     */
+    private int totalErrorRequests;
+
+    /**
+     * Существующие страницы (responseCode = 200)
+     */
     private final HashSet<String> existingPages;
+    /**
+     * Несуществующие страницы (responseCode = 404)
+     */
     private final HashSet<String> nonExistingPages;
 
+    /**
+     * Статистика используемых ОС (доля от 0 до 1)
+     */
     private final HashMap<String, Integer> osMap;
+    /**
+     * Статистика используемых браузеров (доля от 0 до 1)
+     */
     private final HashMap<String, Integer> browserMap;
 
-
+    /**
+     * Временные интервалы для подсчёта средних значений за единицу времени
+     */
     public enum TimeIntervals {
          SECOND {
-             protected double getTrafficRate(Statistics obj) {
-                return (double) obj.totalTraffic / Duration.between(obj.minTime, obj.maxTime).toSeconds();
-            }
-        }
+             protected double getSecondsCount() {
+                 return 1.0;
+             }
+         }
         , MINUTE {
-            protected double getTrafficRate(Statistics obj) {
-                return obj.totalTraffic / (Duration.between(obj.minTime, obj.maxTime).toSeconds() / 60.0);
+            protected double getSecondsCount() {
+                return 60.0;
             }
         }
         , HOUR {
-            protected double getTrafficRate(Statistics obj) {
-                return obj.totalTraffic / (Duration.between(obj.minTime, obj.maxTime).toSeconds() / 3600.0);
+
+            protected double getSecondsCount() {
+                return 3600.0;
             }
         }
         , DAY {
-            protected double getTrafficRate(Statistics obj) {
-                return obj.totalTraffic / (Duration.between(obj.minTime, obj.maxTime).toSeconds() / 86400.0);
+            protected double getSecondsCount() {
+                return 86400.0;
             }
         };
 
-        protected double getTrafficRate(Statistics obj) {
+        protected double getSecondsCount() {
             return 0;
         }
     }
 
     public Statistics() {
-      existingPages = new HashSet<>();
-      nonExistingPages = new HashSet<>();
-      osMap = new HashMap<>();
-      browserMap = new HashMap<>();
-      clean();
+        existingPages = new HashSet<>();
+        nonExistingPages = new HashSet<>();
+        osMap = new HashMap<>();
+        browserMap = new HashMap<>();
+        logEntries = new ArrayList<>();
+        clean();
     }
 
+    /**
+     * Сброс подсчитанной статистики
+     */
     public void clean() {
         totalTraffic = 0;
         minTime = LocalDateTime.MAX;
         maxTime = LocalDateTime.MIN;
+        totalUsersRequests = 0;
+        totalErrorRequests = 0;
+        logEntries.clear();
         existingPages.clear();
         nonExistingPages.clear();
         osMap.clear();
         browserMap.clear();
     }
 
+    /**
+     * Подсчитывает статистику по распарсенной строке лога
+     * @param entry - предварительно распарсенная строка
+     */
     public void addEntry(LogEntry entry) {
+        logEntries.add(entry);
+
         totalTraffic += entry.getResponseSize();
         if (minTime.isAfter(entry.getTime()))
             minTime = entry.getTime();
@@ -87,6 +136,14 @@ public class Statistics {
         String browser = entry.getUserAgent().getBrowser();
         value = browserMap.get(browser);
         browserMap.put(browser, value == null ? 1 : value+1);
+
+        // Подсчёт не ботов
+        if (!entry.getUserAgent().isBot())
+            totalUsersRequests += 1;
+
+        // Подсчёт ошибочных запросов
+        if (entry.getResponseCode() >= 400 && entry.getResponseCode() < 600)
+            totalErrorRequests += 1;
     }
 
     /**
@@ -96,10 +153,61 @@ public class Statistics {
         return getTrafficRate(TimeIntervals.HOUR);
     }
 
+    /**
+     * Возвращает среднее значение трафика за интервал времени
+     * @param interval - заданный интервал
+     * @return - средний трафик за указанный интервал
+     */
     public double getTrafficRate(TimeIntervals interval) {
-        return interval.getTrafficRate(this);
+        return totalTraffic / (Duration.between(minTime, maxTime).toSeconds() / interval.getSecondsCount());
     }
 
+    /**
+     * Метод без параметров, по умолчанию возвращающий долю в час согласно требованию в задаче
+     */
+    public double getUserRequestsRate() {
+        return getUserRequestsRate(TimeIntervals.HOUR);
+    }
+
+    /**
+     * Возвращает количество запросов от пользователей за интервал времени
+     * @param interval - заданный интервал
+     * @return - среднее количество запросов за интервал
+     */
+    public double getUserRequestsRate(TimeIntervals interval) {
+        return totalUsersRequests / (Duration.between(minTime, maxTime).toSeconds() / interval.getSecondsCount());
+    }
+
+    public double getErrorRequestsRate() {
+        return getErrorRequestsRate(TimeIntervals.HOUR);
+    }
+
+    /**
+     * Возвращает количество ошибочных запросов за интервал времени
+     * @param interval - заданный интервал
+     * @return - среднее количество ошибочных запросов за интервал
+     */
+    public double getErrorRequestsRate(TimeIntervals interval) {
+        return totalErrorRequests / (Duration.between(minTime, maxTime).toSeconds() / interval.getSecondsCount());
+    }
+
+    /**
+     * Возвращает среднее количество запросов от одного пользователя (ip адреса)
+     * @return - отношение общего числа запросов от пользователей к числу уникальных ip адресов
+     */
+    public double getUserAttendanceRate() {
+        return (double) totalUsersRequests / logEntries.stream()
+                .filter(e -> !e.getUserAgent().isBot())
+                .map(LogEntry::getIpAddr)
+                .distinct()
+                .count();
+    }
+
+    /**
+     * Возвращает рассчитанные доли относительно общего количества записией в логе
+     * @param srcMap - HashMap, для значений в которой нужно подсчитать их доли
+     * @return - HashMap c рассчитанными долями относительно общего количества элементов
+     */
     private HashMap<String, Double> getMapRates(HashMap<String, Integer> srcMap) {
         int totalRecsCount = 0;
 
@@ -114,20 +222,36 @@ public class Statistics {
         return result;
     }
 
+    /**
+     * Возвращает долю (от 0 до 1) используемых Операционных систем в логе
+     * @return - HashMap c key-именем ОС и value-значением её доли
+     */
     public HashMap<String, Double> getOsRate() {
         return getMapRates(osMap);
     }
 
+    /**
+     * Возвращает долю (от 0 до 1) используемых браузеров в логе
+     * @return - HashMap c key-именем браузера и value-значением его доли
+     */
     public HashMap<String, Double> getBrowserRate() {
         return getMapRates(browserMap);
     }
 
+    /**
+     * Возвращает список существующих странниц (responseCode = 200)
+     * @return - HashSet c адресами страниц
+     */
     public HashSet<String> getExistingPages() {
-        return existingPages;
+        return new HashSet<>(existingPages);
     }
 
+    /**
+     * Возвращает список несуществующих странниц (responseCode = 404)
+     * @return - HashSet c адресами страниц
+     */
     public HashSet<String> getNonExistingPages() {
-        return nonExistingPages;
+        return new HashSet<>(nonExistingPages);
     }
 
     @Override

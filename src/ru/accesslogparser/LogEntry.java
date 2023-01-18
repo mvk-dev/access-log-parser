@@ -6,16 +6,33 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Содержит данные из разобранной строки лог-файла
+ */
 public class LogEntry {
+    /**
+     * IP-адрес клиента
+     */
     private String ipAddr;
+    /**
+     * Дата/время запроса
+     */
     private LocalDateTime time;
     private HttpMethod method;
     private String path;
     private int responseCode;
     private int responseSize;
+    /**
+     * Адрес запрашиваемого страницы
+     */
     private String referer;
     private UserAgent userAgent;
 
+    /**
+     * Разбирает строку лог-файла
+     * @param row - строка лога
+     * @throws LogEntryCreateException
+     */
     public LogEntry(String row) throws LogEntryCreateException {
         int count = 1;
         Pattern pattern = Pattern.compile("([^ \"\\[]+)|(\\[(?<brackets>[^]]*)])|(\"(?<text>[^\"]*)\")");
@@ -70,6 +87,10 @@ public class LogEntry {
         return userAgent;
     }
 
+    public String getIpAddr() {
+        return ipAddr;
+    }
+
     @Override
     public String toString() {
         return "LogEntry {" +
@@ -85,6 +106,6 @@ public class LogEntry {
     }
 }
 /**
- Для задачи нет необходимости перечислять все методы
+ Используемые в рамках задачи методы
  */
 enum HttpMethod {POST, GET, PUT, HEAD}

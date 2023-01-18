@@ -7,12 +7,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ *
+ */
 class LogFile {
     private final File file;
-
     private final Checkable check;
-
     private final List<LogEntry> entries = new ArrayList<>();
 
     public LogFile(File file, Checkable checkString) {
