@@ -2,6 +2,7 @@ package ru.accesslogparser;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -77,5 +78,19 @@ public class Main {
 
         System.out.println("==================================================================");
         System.out.println("Среднее количество запросов от одного пользователя = " + String.format("%,.2f", stat.getUserAttendanceRate()));
+
+        System.out.println("==================================================================");
+        System.out.println("Пиковая посещаемость:");
+        for(Map.Entry<LocalDateTime, Integer> entry: stat.getPeakTimeAttendance().entrySet())
+            System.out.println(entry.getKey() + " - " + entry.getValue());
+
+        System.out.println("==================================================================");
+        System.out.println("Список доменных имён:");
+        System.out.println(stat.getDomains());
+
+        System.out.println("==================================================================");
+        System.out.println("IP адреса с наибольшим количеством запросов:");
+        for(Map.Entry<String, Integer> entry: stat.getPeakUserAttendance().entrySet())
+            System.out.println(entry.getKey() + " - " + entry.getValue());
     }
 }

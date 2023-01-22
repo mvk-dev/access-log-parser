@@ -3,6 +3,9 @@ package ru.accesslogparser;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Класс подсчёта статистики по разобранному лог-файлу
@@ -50,6 +53,7 @@ public class Statistics {
      */
     private final HashMap<String, Integer> browserMap;
 
+    private final HashSet<String> domains;
     /**
      * Временные интервалы для подсчёта средних значений за единицу времени
      */
@@ -87,6 +91,7 @@ public class Statistics {
         osMap = new HashMap<>();
         browserMap = new HashMap<>();
         logEntries = new ArrayList<>();
+        domains = new HashSet<>();
         clean();
     }
 
@@ -104,6 +109,7 @@ public class Statistics {
         nonExistingPages.clear();
         osMap.clear();
         browserMap.clear();
+        domains.clear();
     }
 
     /**
@@ -144,6 +150,12 @@ public class Statistics {
         // Подсчёт ошибочных запросов
         if (entry.getResponseCode() >= 400 && entry.getResponseCode() < 600)
             totalErrorRequests += 1;
+
+        // Выделение доменного имени
+        Pattern pattern = Pattern.compile("^(http(s)?://|)(www\\.|)(?<domain>([^/]+)(?<!www)\\.[^/.&]+)($|/.*)");
+        Matcher matcher = pattern.matcher(entry.getReferer());
+        if (matcher.find())
+            domains.add(matcher.group("domain"));
     }
 
     /**
@@ -252,6 +264,55 @@ public class Statistics {
      */
     public HashSet<String> getNonExistingPages() {
         return new HashSet<>(nonExistingPages);
+    }
+
+    /**
+     * Рассчитывает пиковые значения с точки зрения количества запросов в еденицу времени
+     * @return - Map cо значением временной метки и количеством запросов в этот момент
+     */
+    public Map<LocalDateTime, Integer> getPeakTimeAttendance() {
+        // Группируем по времени
+        Map<LocalDateTime, Long> map = logEntries.stream()
+                .filter(e -> !e.getUserAgent().isBot())
+                .collect(Collectors.groupingBy(LogEntry::getTime, Collectors.counting()));
+
+        // Считаем элементы с максимальным количеством запросов
+        long max = map.values()
+                .stream()
+                .max(Long::compareTo).orElse((long)0);
+
+        // Отбираем наиболее пиковые времена
+        return map.entrySet()
+                .stream()
+                .filter(e -> e.getValue() == max)
+                .collect(Collectors.toMap(Map.Entry::getKey, e-> e.getValue().intValue()));
+    }
+
+    /**
+     * Рассчитывает ip адреса с наибольшим количеством запросов с них
+     * @return - Map c ip пользователя и количеством запросов от него
+     */
+    public Map<String, Integer> getPeakUserAttendance() {
+        Map<String, Long> map = logEntries.stream()
+                .filter(e -> !e.getUserAgent().isBot())
+                .collect(Collectors.groupingBy(LogEntry::getIpAddr, Collectors.counting()));
+
+        long max = map.values()
+                .stream()
+                .max(Long::compareTo).orElse((long)0);
+
+        return map.entrySet()
+                .stream()
+                .filter(e -> e.getValue() == max)
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().intValue()));
+    }
+
+    /**
+     * Возвращает список уникальных доменных имен из {@link LogEntry#getReferer()}
+     * @return - HashSet уникальных доменных имен
+     */
+    public HashSet<String> getDomains() {
+        return new HashSet<>(domains);
     }
 
     @Override
